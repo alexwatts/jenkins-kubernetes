@@ -16,9 +16,6 @@ spec:
       containers:
       - name: jenkins
         image: jenkins/jenkins:latest
-        env:
-          - name: JAVA_OPTS
-            value: -Xmx384m
         ports:
           - name: http-port
             containerPort: 8080
@@ -27,11 +24,6 @@ spec:
         volumeMounts:
           - name: jenkins-pvc
             mountPath: /var/jenkins_home
-        resources:
-          limits:
-            memory: "640Mi"
-          requests:
-            memory: "640Mi"
       initContainers:
         - name: jenkins-data-permission-fix
           image: busybox

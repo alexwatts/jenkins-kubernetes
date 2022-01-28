@@ -1,0 +1,65 @@
+pipeline {
+
+ agent {
+        kubernetes{
+            yaml '''
+                apiVersion: v1
+                kind: Pod
+                spec:
+                  securityContext:
+                    runAsUser: 0
+                  containers:
+                  - name: docker
+                    image: docker:latest
+                    command:
+                    - cat
+                    tty: true
+                    volumeMounts:
+                    - mountPath: /var/run/docker.sock
+                      name: docker-sock
+                  - name: gradle
+                    image: gradle:7.3-jdk11-alpine
+                    command:
+                    - cat
+                    tty: true
+                  - name: node
+                    image: node:latest
+                    command:
+                    - cat
+                    tty: true
+                  resources:
+                    limits:
+                      memory: "256Mi"
+                    requests:
+                      memory: "128Mi"
+                  volumes:
+                  - name: docker-sock
+                    hostPath:
+                      path: /var/run/docker.sock
+                '''
+        }
+    }
+
+    stages {
+        stage('clone') {
+            steps {
+                sh "git clone https://github.com/alexwatts/TestHub"
+            }
+        }
+        stage('build') {
+            steps {
+              container('docker') {
+                   sh 'docker build -f TestHub/Dockerfile-build-gradle-cache -t registry.digitalocean.com/do-k8s-ecr/gradle-cache TestHub'
+              }
+            }
+        }
+        stage('package') {
+            steps {
+                container('docker') {
+                    sh 'docker login -u $TOKEN -p $TOKEN registry.digitalocean.com'
+                    sh 'docker push registry.digitalocean.com/do-k8s-ecr/gradle-cache'
+                }
+            }
+        }
+    }
+}
