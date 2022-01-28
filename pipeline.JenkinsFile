@@ -54,7 +54,7 @@ pipeline {
         stage('build') {
             steps {
               container('node') {
-                  sh 'export NODE_OPTIONS=--max_old_space_size=170'
+                  sh 'export NODE_OPTIONS=--max_old_space_size=200'
                   sh 'yarn --cwd TestHub/src/main/ui install && yarn --cwd TestHub/src/main/ui build && mv TestHub/src/main/ui/build TestHub/src/main/resources/public'
               }
               container('gradle') {
