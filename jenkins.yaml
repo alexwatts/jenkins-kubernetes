@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: jenkins-set
+spec:
+  replicas: 1
+  serviceName: "jenkins"
+  selector:
+    matchLabels:
+      app: jenkins
+  template:
+    metadata:
+      labels:
+        app: jenkins
+    spec:
+      containers:
+      - name: jenkins
+        image: jenkins/jenkins:latest
+        env:
+          - name: JAVA_OPTS
+            value: -Xmx384m
+        ports:
+          - name: http-port
+            containerPort: 8080
+          - name: jnlp-port
+            containerPort: 50000
+        volumeMounts:
+          - name: jenkins-pvc
+            mountPath: /var/jenkins_home
+        resources:
+          limits:
+            memory: "640Mi"
+          requests:
+            memory: "640Mi"
+      initContainers:
+        - name: jenkins-data-permission-fix
+          image: busybox
+          command: [ "/bin/chmod","-R","777", "/var/jenkins_home" ]
+          volumeMounts:
+            - name: jenkins-pvc
+              mountPath: /var/jenkins_home
+  volumeClaimTemplates:
+    - metadata:
+        name: jenkins-pvc
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 5Gi
+        storageClassName: do-block-storage

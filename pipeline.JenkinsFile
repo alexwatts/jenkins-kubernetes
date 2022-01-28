@@ -1,0 +1,83 @@
+pipeline {
+
+    agent {
+        kubernetes{
+            yaml '''
+                apiVersion: v1
+                kind: Pod
+                spec:
+                  securityContext:
+                    runAsUser: 0
+                  containers:
+                  - name: docker
+                    image: docker:latest
+                    command:
+                    - cat
+                    tty: true
+                    volumeMounts:
+                    - mountPath: /var/run/docker.sock
+                      name: docker-sock
+                  - name: kubectl
+                    image: bitnami/kubectl
+                    command:
+                    - cat
+                    tty: true
+                  - name: gradle
+                    image: gradle:7.3-jdk11-alpine
+                    command:
+                    - cat
+                    tty: true
+                  - name: node
+                    image: node:latest
+                    command:
+                    - cat
+                    tty: true
+                  resources:
+                    limits:
+                      memory: "256Mi"
+                    requests:
+                      memory: "128Mi"
+                  volumes:
+                  - name: docker-sock
+                    hostPath:
+                      path: /var/run/docker.sock
+                '''
+        }
+    }
+
+    stages {
+        stage('clone') {
+            steps {
+                sh "git clone https://github.com/alexwatts/TestHub"
+            }
+        }
+        stage('build') {
+            steps {
+              container('node') {
+                  sh 'export NODE_OPTIONS=--max_old_space_size=170'
+                  sh 'yarn --cwd TestHub/src/main/ui install && yarn --cwd TestHub/src/main/ui build && mv TestHub/src/main/ui/build TestHub/src/main/resources/public'
+              }
+              container('gradle') {
+                  sh "gradle clean build -b TestHub/build.gradle"
+              }
+            }
+        }
+        stage('package') {
+            steps {
+                 container('docker') {
+                     sh 'docker build --build-arg JAR_FILE=build/libs/TestHub-1.0-SNAPSHOT.jar -t registry.digitalocean.com/do-k8s-ecr/test-hub TestHub'
+                     sh 'docker login -u --token=${ecrToken} registry.digitalocean.com'
+                     sh 'docker push registry.digitalocean.com/do-k8s-ecr/test-hub'
+                 }
+            }
+        }
+        stage('deploy') {
+            steps {
+                 container('kubectl') {
+                     sh 'kubectl delete -f TestHub/testhub.yaml --insecure-skip-tls-verify --kubeconfig="/dev/null" --server=https://65e9bf92-c0ae-46bb-bcd7-edd36ecba1dc.k8s.ondigitalocean.com --token=${deployToken} -ntesthub'
+                     sh 'kubectl apply -f TestHub/testhub.yaml --insecure-skip-tls-verify --kubeconfig="/dev/null" --server=https://65e9bf92-c0ae-46bb-bcd7-edd36ecba1dc.k8s.ondigitalocean.com --token=${deployToken} -ntesthub'
+                 }
+            }
+        }
+    }
+}
