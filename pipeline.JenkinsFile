@@ -69,7 +69,7 @@ pipeline {
         stage('deploy') {
             steps {
                  container('kubectl') {
-                     sh 'kubectl delete -f TestHub/testhub.yaml --insecure-skip-tls-verify --kubeconfig="/dev/null" --server=$TOKEN -ntesthub'
+                     sh 'kubectl delete -f TestHub/testhub.yaml --insecure-skip-tls-verify --kubeconfig="/dev/null"  --server=https://65e9bf92-c0ae-46bb-bcd7-edd36ecba1dc.k8s.ondigitalocean.com --server=$TOKEN -ntesthub'
                      sh 'kubectl apply -f TestHub/testhub.yaml --insecure-skip-tls-verify --kubeconfig="/dev/null" --server=https://65e9bf92-c0ae-46bb-bcd7-edd36ecba1dc.k8s.ondigitalocean.com --token=$TOKEN -ntesthub'
                  }
             }
