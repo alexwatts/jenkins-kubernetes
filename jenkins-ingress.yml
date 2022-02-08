@@ -8,7 +8,7 @@ metadata:
         more_set_headers "Pragma: no-cache";
         more_set_headers "Expires: 0";
 spec:
-  ingressClassName: nginx-testhub
+  ingressClassName: nginx-default
   rules:
     - host: jenkins.testhub.com
       http:

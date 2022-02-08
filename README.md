@@ -19,10 +19,20 @@ kubectl create namespace jenkins
 Create the jenkins Stateful Set.
 
 ```
-kubectl create -f jenkins.yaml --namespace jenkins
+kubectl apply -f jenkins.yaml --namespace jenkins
 ```
 
-Check the pod is running.
+Crete the ci/cd role/binding and service account.
+
+```
+kubectl apply -f cicd-role.yaml --namespace jenkins
+
+kubectl apply -f cicd-bindingyaml --namespace jenkins
+
+kubectl apply -f cicd-service-account.yaml --namespace jenkins
+```
+
+Check the Jenkins pod is running.
 
 ```
 kubectl get pods -n jenkins
@@ -38,7 +48,7 @@ jenkins-set-0   1/1     Running   0          2d19h
 Create the service.
 
 ```
-kubectl create -f jenkins-service.yaml --namespace jenkins
+kubectl apply -f jenkins-service.yaml --namespace jenkins
 ```
 
 Get the IP to access Jenkins UI.
@@ -96,4 +106,13 @@ You should be able to enter that password into the UI and if everything was succ
 
 ```
 http://{EXTERNAL-IP}:30000
+```
+
+You can optionally create an ingress to access the service on a specifc virtual host via the loadbalacer.
+
+```
+kubectl apply -f nginx-default.yaml -njenkins
+
+kubectl apply -f jenkins-ingress.yaml -njenkins
+
 ```
